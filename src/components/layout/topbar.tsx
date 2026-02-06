@@ -21,7 +21,7 @@ export function Topbar({
 	onLogout,
 }: {
 	orgName: string;
-	onLogout: () => void;
+	onLogout: (formData: FormData) => void | Promise<void>;
 }) {
 	const pathname = usePathname();
 
@@ -64,7 +64,13 @@ export function Topbar({
 					<DropdownMenuContent align="end" className="w-56">
 						<DropdownMenuLabel>Conta</DropdownMenuLabel>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem onClick={onLogout}>Sair</DropdownMenuItem>
+						<form action={onLogout}>
+							<DropdownMenuItem asChild>
+								<button type="submit" className="w-full text-left">
+									Sair
+								</button>
+							</DropdownMenuItem>
+						</form>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>

@@ -12,14 +12,53 @@ export default async function DashboardLayout({
 }: {
 	children: React.ReactNode;
 }) {
-	const supabase = await createSupabaseServerClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	let org: Awaited<ReturnType<typeof getOrgContextForCurrentUser>> = null;
+	try {
+		const supabase = await createSupabaseServerClient();
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
 
-	if (!user) redirect("/login");
+		if (!user) redirect("/login");
 
-	const org = await getOrgContextForCurrentUser();
+		org = await getOrgContextForCurrentUser();
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Erro desconhecido";
+		return (
+			<div className="min-h-dvh bg-background">
+				<div className="grid min-h-dvh grid-cols-1 md:grid-cols-[260px_1fr]">
+					<div className="hidden border-r bg-background md:block">
+						<Sidebar />
+					</div>
+					<div className="flex min-w-0 flex-col">
+						<Topbar orgName="Configuração" onLogout={logoutAction} />
+						<main className="min-w-0 flex-1 p-4 md:p-6">
+							<Card className="rounded-2xl shadow-sm">
+								<CardHeader>
+									<CardTitle>Configuração incompleta</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-2">
+									<p className="text-sm text-muted-foreground">
+										O painel não conseguiu inicializar.
+									</p>
+									<p className="text-sm text-muted-foreground">
+										Detalhe: <span className="font-medium">{message}</span>
+									</p>
+									<p className="text-sm text-muted-foreground">
+										Verifique as env vars do Supabase (principalmente
+										{" "}
+										<span className="font-medium">NEXT_PUBLIC_SUPABASE_URL</span>
+										e{" "}
+										<span className="font-medium">NEXT_PUBLIC_SUPABASE_ANON_KEY</span>).
+									</p>
+								</CardContent>
+							</Card>
+						</main>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-dvh bg-background">
