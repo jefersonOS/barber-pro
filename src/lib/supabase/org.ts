@@ -24,7 +24,18 @@ export async function getOrgContextForCurrentUser(): Promise<OrgContext | null> 
 		.limit(1)
 		.maybeSingle();
 
-	if (error || !data) return null;
+	if (error) {
+		// Importante: não engolir erros de RLS/policies, senão vira "Sem organização".
+		console.error("getOrgContextForCurrentUser error", {
+			message: error.message,
+			details: (error as unknown as { details?: string }).details,
+			hint: (error as unknown as { hint?: string }).hint,
+			code: (error as unknown as { code?: string }).code,
+		});
+		throw error;
+	}
+
+	if (!data) return null;
 
 	const orgName = (data as unknown as { organizations?: { name?: string } })
 		.organizations?.name;
