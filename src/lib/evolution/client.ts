@@ -52,18 +52,29 @@ export class EvolutionClient {
 			allowNonJson?: boolean;
 		},
 	): Promise<T> {
-		const url = `${this.baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+		const buildUrl = (base: string, p: string) =>
+			`${base}${p.startsWith("/") ? "" : "/"}${p}`;
 
-		const response = await fetch(url, {
-			method: options.method,
-			headers: {
-				"content-type": "application/json",
-				apikey: this.apiKey,
-				authorization: `Bearer ${this.apiKey}`,
-			},
-			body: options.body ? JSON.stringify(options.body) : undefined,
-			cache: "no-store",
-		});
+		const doFetch = async (base: string, p: string) => {
+			const url = buildUrl(base, p);
+			return fetch(url, {
+				method: options.method,
+				headers: {
+					"content-type": "application/json",
+					apikey: this.apiKey,
+					authorization: `Bearer ${this.apiKey}`,
+				},
+				body: options.body ? JSON.stringify(options.body) : undefined,
+				cache: "no-store",
+			});
+		};
+
+		let response = await doFetch(this.baseUrl, path);
+		// Alguns deploys expõem a API em /api (enquanto o painel fica em /manager).
+		// Se a rota não existir na raiz, tenta novamente com prefixo /api.
+		if (response.status === 404 && !path.startsWith("/api/")) {
+			response = await doFetch(this.baseUrl, `/api${path.startsWith("/") ? "" : "/"}${path}`);
+		}
 
 		if (!response.ok) {
 			let text = await response.text().catch(() => "");
