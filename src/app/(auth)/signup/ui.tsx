@@ -12,7 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { signupAction, type SignupState } from "@/app/actions/auth";
+import { signupAction } from "@/app/actions/auth";
+import type { SignupState } from "@/app/actions/auth.types";
 
 const schema = z.object({
 	name: z.string().min(2, "Informe seu nome"),

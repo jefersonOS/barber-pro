@@ -3,20 +3,13 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { LoginState, SignupState } from "./auth.types";
 
 const loginSchema = z.object({
 	email: z.string().email("Informe um e-mail válido"),
 	password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 	next: z.string().optional(),
 });
-
-export type LoginState =
-	| { ok: true }
-	| { ok: false; message: string; fieldErrors?: Record<string, string[]> };
-
-export type SignupState =
-	| { ok: true }
-	| { ok: false; message: string; fieldErrors?: Record<string, string[]> };
 
 export async function loginAction(
 	_prevState: LoginState | undefined,
