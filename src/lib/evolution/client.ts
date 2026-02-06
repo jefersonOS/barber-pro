@@ -23,8 +23,8 @@ function getEvolutionEnv() {
 	const baseUrl = process.env.EVOLUTION_API_URL;
 	const apiKey = process.env.EVOLUTION_API_KEY;
 
-	if (!baseUrl || !apiKey) {
-		throw new Error("Missing EVOLUTION_API_URL / EVOLUTION_API_KEY");
+	if (!baseUrl) {
+		throw new Error("Missing EVOLUTION_API_URL");
 	}
 
 	const trimmed = baseUrl.replace(/\/$/, "");
@@ -36,7 +36,7 @@ function getEvolutionEnv() {
 
 export class EvolutionClient {
 	private baseUrl: string;
-	private apiKey: string;
+	private apiKey?: string;
 
 	constructor() {
 		const env = getEvolutionEnv();
@@ -59,13 +59,16 @@ export class EvolutionClient {
 
 		const doFetch = async (base: string, p: string): Promise<FetchResult> => {
 			const url = buildUrl(base, p);
+			const headers: Record<string, string> = {
+				"content-type": "application/json",
+			};
+			if (this.apiKey) {
+				headers["apikey"] = this.apiKey;
+				headers["authorization"] = `Bearer ${this.apiKey}`;
+			}
 			const response = await fetch(url, {
 				method: options.method,
-				headers: {
-					"content-type": "application/json",
-					apikey: this.apiKey,
-					authorization: `Bearer ${this.apiKey}`,
-				},
+				headers,
 				body: options.body ? JSON.stringify(options.body) : undefined,
 				cache: "no-store",
 			});
