@@ -27,7 +27,11 @@ function getEvolutionEnv() {
 		throw new Error("Missing EVOLUTION_API_URL / EVOLUTION_API_KEY");
 	}
 
-	return { baseUrl: baseUrl.replace(/\/$/, ""), apiKey };
+	const trimmed = baseUrl.replace(/\/$/, "");
+	// Muita gente cola a URL do painel do Evolution (termina em /manager).
+	// A API geralmente fica na raiz; se mantiver /manager, dá 404 em /manager/instance/*.
+	const normalized = trimmed.replace(/\/manager$/, "");
+	return { baseUrl: normalized, apiKey };
 }
 
 export class EvolutionClient {
