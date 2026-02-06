@@ -44,6 +44,12 @@ export default function LoginForm() {
 
 	const fieldErrors = state?.ok === false ? state.fieldErrors : undefined;
 
+	const onSubmit = form.handleSubmit((_values, event) => {
+		const target = event?.target as HTMLFormElement | null;
+		if (!target) return;
+		formAction(new FormData(target));
+	});
+
 	return (
 		<Card className="rounded-2xl shadow-sm">
 			<CardHeader>
@@ -55,7 +61,7 @@ export default function LoginForm() {
 			<CardContent>
 				<form
 					action={formAction}
-					onSubmit={form.handleSubmit(() => {})}
+					onSubmit={onSubmit}
 					className="space-y-4"
 				>
 					<input type="hidden" name="next" value={next ?? ""} />
