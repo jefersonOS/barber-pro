@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -118,6 +119,13 @@ export default function LoginForm() {
 					<Button type="submit" className="w-full" disabled={pending}>
 						{pending ? "Entrando..." : "Entrar"}
 					</Button>
+
+					<div className="text-center text-sm text-muted-foreground">
+						Não tem conta?{" "}
+						<Link href="/signup" className="underline underline-offset-4">
+							Criar conta
+						</Link>
+					</div>
 				</form>
 			</CardContent>
 		</Card>
