@@ -66,57 +66,71 @@ export async function signupAction(
 	_prevState: SignupState | undefined,
 	formData: FormData,
 ): Promise<SignupState> {
-	const parsed = signupSchema.safeParse({
-		name: formData.get("name"),
-		orgName: formData.get("org_name"),
-		email: formData.get("email"),
-		password: formData.get("password"),
-	});
+	try {
+		const parsed = signupSchema.safeParse({
+			name: formData.get("name"),
+			orgName: formData.get("org_name"),
+			email: formData.get("email"),
+			password: formData.get("password"),
+		});
 
-	if (!parsed.success) {
+		if (!parsed.success) {
+			return {
+				ok: false,
+				message: "Revisa os campos e tenta de novo.",
+				fieldErrors: parsed.error.flatten().fieldErrors,
+			};
+		}
+
+		const supabase = await createSupabaseServerClient();
+
+		const { error: signUpError } = await supabase.auth.signUp({
+			email: parsed.data.email,
+			password: parsed.data.password,
+			options: {
+				data: { name: parsed.data.name },
+			},
+		});
+
+		if (signUpError) {
+			return {
+				ok: false,
+				message: signUpError.message || "Não foi possível criar a conta.",
+			};
+		}
+
+		// Garante sessão ativa (dependendo da config de confirmação de e-mail)
+		const { error: signInError } = await supabase.auth.signInWithPassword({
+			email: parsed.data.email,
+			password: parsed.data.password,
+		});
+
+		if (signInError) {
+			return {
+				ok: false,
+				message:
+					"Conta criada. Agora confirme seu e-mail (se necessário) e faça login.",
+			};
+		}
+
+		const { error: rpcError } = await supabase.rpc("create_org_for_current_user", {
+			org_name: parsed.data.orgName,
+			owner_name: parsed.data.name,
+		});
+
+		if (rpcError) {
+			return {
+				ok: false,
+				message: `Conta criada, mas falhou ao criar a barbearia. (${rpcError.message})`,
+			};
+		}
+
+		redirect("/dashboard");
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Erro desconhecido";
 		return {
 			ok: false,
-			message: "Revisa os campos e tenta de novo.",
-			fieldErrors: parsed.error.flatten().fieldErrors,
+			message: `Falha ao criar conta. (${message})`,
 		};
 	}
-
-	const supabase = await createSupabaseServerClient();
-
-	const { error: signUpError } = await supabase.auth.signUp({
-		email: parsed.data.email,
-		password: parsed.data.password,
-		options: {
-			data: { name: parsed.data.name },
-		},
-	});
-
-	if (signUpError) {
-		return { ok: false, message: signUpError.message || "Não foi possível criar a conta." };
-	}
-
-	// Garante sessão ativa (dependendo da config de confirmação de e-mail)
-	const { error: signInError } = await supabase.auth.signInWithPassword({
-		email: parsed.data.email,
-		password: parsed.data.password,
-	});
-
-	if (signInError) {
-		return {
-			ok: false,
-			message:
-				"Conta criada. Agora confirme seu e-mail (se necessário) e faça login.",
-		};
-	}
-
-	const { error: rpcError } = await supabase.rpc("create_org_for_current_user", {
-		org_name: parsed.data.orgName,
-		owner_name: parsed.data.name,
-	});
-
-	if (rpcError) {
-		return { ok: false, message: "Conta criada, mas falhou ao criar a barbearia." };
-	}
-
-	redirect("/dashboard");
 }

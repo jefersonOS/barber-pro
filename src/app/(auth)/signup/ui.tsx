@@ -141,6 +141,10 @@ export default function SignupForm() {
 						{pending ? "Criando..." : "Criar conta"}
 					</Button>
 
+					{state?.ok === false ? (
+						<p className="text-sm text-destructive">{state.message}</p>
+					) : null}
+
 					<div className="text-center text-sm text-muted-foreground">
 						Já tem conta?{" "}
 						<Link href="/login" className="underline underline-offset-4">
