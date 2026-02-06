@@ -158,15 +158,34 @@ export function extractQrCode(payload: unknown): string | null {
 			? (obj["data"] as Record<string, unknown>)
 			: null;
 
-	const qr =
-		(obj["qrcode"] as unknown) ??
-		(obj["qrCode"] as unknown) ??
-		(obj["qrcodeBase64"] as unknown) ??
-		(data?.["qrcode"] as unknown) ??
-		(data?.["qr"] as unknown) ??
-		(data?.["qrCode"] as unknown);
+	const pickString = (value: unknown): string | null => {
+		if (!value) return null;
+		if (typeof value === "string") return value;
+		if (typeof value !== "object") return null;
+		const rec = value as Record<string, unknown>;
+		const nested =
+			(rec["base64"] as unknown) ??
+			(rec["qrcode"] as unknown) ??
+			(rec["qr"] as unknown) ??
+			(rec["qrCode"] as unknown);
+		return typeof nested === "string" ? nested : null;
+	};
 
-	if (!qr) return null;
-	if (typeof qr !== "string") return null;
-	return qr;
+	const candidates: unknown[] = [
+		obj["qrcode"],
+		obj["qrCode"],
+		obj["qrcodeBase64"],
+		obj["qr"],
+		data?.["qrcode"],
+		data?.["qr"],
+		data?.["qrCode"],
+		data?.["qrcodeBase64"],
+	];
+
+	for (const c of candidates) {
+		const s = pickString(c);
+		if (s) return s;
+	}
+
+	return null;
 }

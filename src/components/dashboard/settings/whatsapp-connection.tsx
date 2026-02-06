@@ -54,6 +54,7 @@ function statusLabel(status: WhatsAppState["status"]) {
 
 function asQrImageSrc(qr: string | null) {
 	if (!qr) return null;
+	if (qr.startsWith("http://") || qr.startsWith("https://")) return qr;
 	if (qr.startsWith("data:image")) return qr;
 	// assume base64 png
 	return `data:image/png;base64,${qr}`;
@@ -188,14 +189,23 @@ export function WhatsAppConnection({
 				<CardContent>
 					{qrSrc ? (
 						<div className="flex items-center justify-center rounded-2xl border bg-background p-4">
-							<Image
-								src={qrSrc}
-								alt="QR Code do WhatsApp"
-								width={256}
-								height={256}
-								unoptimized
-								className="h-64 w-64"
-							/>
+							{qrSrc.startsWith("http") ? (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img
+									src={qrSrc}
+									alt="QR Code do WhatsApp"
+									className="h-64 w-64"
+								/>
+							) : (
+								<Image
+									src={qrSrc}
+									alt="QR Code do WhatsApp"
+									width={256}
+									height={256}
+									unoptimized
+									className="h-64 w-64"
+								/>
+							)}
 						</div>
 					) : (
 						<div className="text-sm text-muted-foreground">

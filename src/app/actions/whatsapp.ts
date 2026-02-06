@@ -39,7 +39,7 @@ function safeErrorMessage(e: unknown) {
 function safeQr(qr: string | null) {
 	if (!qr) return null;
 	// Evita payload gigante no RSC/server action.
-	if (qr.length > 200_000) return null;
+	if (qr.length > 2_000_000) return null;
 	return qr;
 }
 
