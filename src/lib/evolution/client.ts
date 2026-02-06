@@ -79,7 +79,12 @@ export class EvolutionClient {
 			return (await response.text()) as unknown as T;
 		}
 
-		return (await response.json()) as T;
+		// Alguns endpoints podem retornar text/plain mesmo em 200.
+		try {
+			return (await response.json()) as T;
+		} catch {
+			return (await response.text()) as unknown as T;
+		}
 	}
 
 	async createInstance(input: {
@@ -97,10 +102,42 @@ export class EvolutionClient {
 		instanceName: string;
 		qrcode: boolean;
 	}): Promise<unknown> {
-		return this.request<unknown>("/instance/connect", {
-			method: "POST",
-			body: input,
-		});
+		const tryReq = async (
+			path: string,
+			method: "GET" | "POST",
+			body?: unknown,
+		) => {
+			return this.request<unknown>(path, {
+				method,
+				body,
+			});
+		};
+
+		// Variante mais comum (v2): POST /instance/connect
+		try {
+			return await tryReq("/instance/connect", "POST", input);
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			if (!msg.includes("Evolution API error 404")) throw e;
+		}
+
+		// Alguns deploys expõem: POST /instance/connect/{instance}
+		try {
+			return await tryReq(
+				`/instance/connect/${encodeURIComponent(input.instanceName)}`,
+				"POST",
+				{ qrcode: input.qrcode },
+			);
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			if (!msg.includes("Evolution API error 404")) throw e;
+		}
+
+		// Alguns deploys usam GET /instance/connect/{instance}?qrcode=true
+		return await tryReq(
+			`/instance/connect/${encodeURIComponent(input.instanceName)}?qrcode=${input.qrcode ? "true" : "false"}`,
+			"GET",
+		);
 	}
 
 	async setWebhook(input: {
