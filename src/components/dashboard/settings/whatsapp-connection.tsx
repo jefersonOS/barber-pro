@@ -8,8 +8,9 @@ import {
 	connectWhatsAppAction,
 	disconnectWhatsAppAction,
 	getWhatsAppStateAction,
-	type WhatsAppState,
 } from "@/app/actions/whatsapp";
+
+import type { WhatsAppState } from "@/app/actions/whatsapp.types";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

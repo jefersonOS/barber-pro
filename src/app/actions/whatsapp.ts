@@ -5,15 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOrgContextForCurrentUser } from "@/lib/supabase/org";
 import { EvolutionClient, extractQrCode } from "@/lib/evolution/client";
 
-export type WhatsAppConnectionStatus = "open" | "close" | "connecting" | "unknown";
-
-export type WhatsAppState = {
-	ok: boolean;
-	message?: string;
-	instanceId: string | null;
-	status: WhatsAppConnectionStatus;
-	qrcode: string | null;
-};
+import type { WhatsAppConnectionStatus, WhatsAppState } from "./whatsapp.types";
 
 const okState = (partial: Partial<WhatsAppState>): WhatsAppState => ({
 	ok: true,
@@ -199,7 +191,3 @@ export async function disconnectWhatsAppAction(
 		return errorState(e instanceof Error ? e.message : "Deu ruim ao desconectar.");
 	}
 }
-
-export const __types = {
-	connectSchema: z.never(),
-};
