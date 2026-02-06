@@ -55,9 +55,11 @@ export class EvolutionClient {
 		const buildUrl = (base: string, p: string) =>
 			`${base}${p.startsWith("/") ? "" : "/"}${p}`;
 
-		const doFetch = async (base: string, p: string) => {
+		type FetchResult = { response: Response; url: string };
+
+		const doFetch = async (base: string, p: string): Promise<FetchResult> => {
 			const url = buildUrl(base, p);
-			return fetch(url, {
+			const response = await fetch(url, {
 				method: options.method,
 				headers: {
 					"content-type": "application/json",
@@ -67,13 +69,20 @@ export class EvolutionClient {
 				body: options.body ? JSON.stringify(options.body) : undefined,
 				cache: "no-store",
 			});
+			return { response, url };
 		};
 
-		let response = await doFetch(this.baseUrl, path);
+		const attemptedUrls: string[] = [];
+		let { response, url } = await doFetch(this.baseUrl, path);
+		attemptedUrls.push(url);
 		// Alguns deploys expõem a API em /api (enquanto o painel fica em /manager).
 		// Se a rota não existir na raiz, tenta novamente com prefixo /api.
 		if (response.status === 404 && !path.startsWith("/api/")) {
-			response = await doFetch(this.baseUrl, `/api${path.startsWith("/") ? "" : "/"}${path}`);
+			({ response, url } = await doFetch(
+				this.baseUrl,
+				`/api${path.startsWith("/") ? "" : "/"}${path}`,
+			));
+			attemptedUrls.push(url);
 		}
 
 		if (!response.ok) {
@@ -81,8 +90,9 @@ export class EvolutionClient {
 			if (text.length > 2000) {
 				text = `${text.slice(0, 2000)}…`;
 			}
+			const urls = attemptedUrls.length > 0 ? ` (url: ${attemptedUrls.join(" -> ")})` : "";
 			throw new Error(
-				`Evolution API error ${response.status} ${response.statusText}: ${text}`,
+				`Evolution API error ${response.status} ${response.statusText}${urls}: ${text}`,
 			);
 		}
 
