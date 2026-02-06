@@ -62,7 +62,10 @@ export class EvolutionClient {
 		});
 
 		if (!response.ok) {
-			const text = await response.text().catch(() => "");
+			let text = await response.text().catch(() => "");
+			if (text.length > 2000) {
+				text = `${text.slice(0, 2000)}…`;
+			}
 			throw new Error(
 				`Evolution API error ${response.status} ${response.statusText}: ${text}`,
 			);

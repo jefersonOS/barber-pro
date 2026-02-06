@@ -1,6 +1,5 @@
 "use server";
 
-import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOrgContextForCurrentUser } from "@/lib/supabase/org";
 import { EvolutionClient, extractQrCode } from "@/lib/evolution/client";
@@ -22,6 +21,27 @@ const errorState = (message: string): WhatsAppState => ({
 	status: "unknown",
 	qrcode: null,
 });
+
+function clampText(input: string, maxLen: number) {
+	if (input.length <= maxLen) return input;
+	return `${input.slice(0, maxLen)}…`;
+}
+
+function safeErrorMessage(e: unknown) {
+	if (e instanceof Error) return clampText(e.message || "Erro", 300);
+	try {
+		return clampText(JSON.stringify(e), 300);
+	} catch {
+		return "Erro";
+	}
+}
+
+function safeQr(qr: string | null) {
+	if (!qr) return null;
+	// Evita payload gigante no RSC/server action.
+	if (qr.length > 200_000) return null;
+	return qr;
+}
 
 function normalizeWebhookUrl(): string {
 	const base = process.env.EVOLUTION_WEBHOOK_PUBLIC_URL;
@@ -71,7 +91,7 @@ export async function getWhatsAppStateAction(
 					instanceName: instanceId,
 					qrcode: true,
 				});
-				qrcode = extractQrCode(res);
+				qrcode = safeQr(extractQrCode(res));
 			} catch {
 				// ignore: status polling should be resilient
 			}
@@ -79,7 +99,8 @@ export async function getWhatsAppStateAction(
 
 		return okState({ instanceId, status, qrcode });
 	} catch (e) {
-		return errorState(e instanceof Error ? e.message : "Deu ruim.");
+		console.error("getWhatsAppStateAction failed", e);
+		return errorState(safeErrorMessage(e));
 	}
 }
 
@@ -104,13 +125,13 @@ export async function connectWhatsAppAction(
 				qrcode: true,
 				integration: "WHATSAPP-BAILEYS",
 			});
-			qrcode = extractQrCode(created);
+			qrcode = safeQr(extractQrCode(created));
 		} catch {
 			const connected = await evolution.connectInstance({
 				instanceName,
 				qrcode: true,
 			});
-			qrcode = extractQrCode(connected);
+			qrcode = safeQr(extractQrCode(connected));
 		}
 
 		await evolution.setWebhook({
@@ -139,10 +160,11 @@ export async function connectWhatsAppAction(
 			instanceId: instanceName,
 			status,
 			qrcode,
-			message: "Conexão iniciada.",
+			message: qrcode ? "Conexão iniciada." : "Conexão iniciada (QR indisponível, clique Atualizar).",
 		});
 	} catch (e) {
-		return errorState(e instanceof Error ? e.message : "Deu ruim ao conectar.");
+		console.error("connectWhatsAppAction failed", e);
+		return errorState(safeErrorMessage(e));
 	}
 }
 
@@ -188,6 +210,7 @@ export async function disconnectWhatsAppAction(
 
 		return okState({ instanceId: null, status: "close", qrcode: null, message: "Desconectado." });
 	} catch (e) {
-		return errorState(e instanceof Error ? e.message : "Deu ruim ao desconectar.");
+		console.error("disconnectWhatsAppAction failed", e);
+		return errorState(safeErrorMessage(e));
 	}
 }
